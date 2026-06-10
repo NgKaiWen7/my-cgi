@@ -1,6 +1,8 @@
 #include <mysql.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "record.h"
 
 #define DB_HOST "localhost"
 #define DB_USER "nkw"
@@ -51,10 +53,13 @@ static void print_page_start(void) {
     puts("table{width:100%;border-collapse:collapse;background:#fff}");
     puts("th,td{border:1px solid #d7dde8;padding:10px;text-align:left;vertical-align:top}");
     puts("th{background:#eef2f7}");
+    puts(".button{display:inline-block;padding:7px 12px;border-radius:4px;background:#1f6feb;color:#fff;text-decoration:none;font-weight:bold}");
+    puts(".swatch{display:inline-block;width:22px;height:22px;margin-right:8px;border:1px solid #9ca3af;border-radius:4px;vertical-align:middle}");
     puts("</style>");
     puts("</head>");
     puts("<body>");
     puts("<h1>Trial Table Records</h1>");
+    puts("<p><a class=\"button\" href=\"/cgi-bin/edit_form.cgi?id=null\">Add New Record</a></p>");
 }
 
 static void print_page_end(void) {
@@ -71,6 +76,7 @@ int main(void) {
 
     print_page_start();
 
+    // Initialize MySQL connection
     conn = mysql_init(NULL);
     if (!conn) {
         puts("<p>mysql_init() failed.</p>");
@@ -78,16 +84,16 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
+    // Connect to the database
     if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 0, NULL, 0)) {
-        printf("<p>Database connection failed: ");
-        print_html_escaped(mysql_error(conn));
-        puts("</p>");
+        puts("<p>Database connection failed</p>");
         mysql_close(conn);
         print_page_end();
         return EXIT_FAILURE;
     }
 
-    if (mysql_query(conn, "SELECT * FROM " TABLE_NAME " ORDER BY id DESC")) {
+    // Execute the query to fetch records
+    if (mysql_query(conn, "SELECT * FROM " TABLE_NAME " ORDER BY id ASC")) {
         printf("<p>Query failed: ");
         print_html_escaped(mysql_error(conn));
         puts("</p>");
@@ -96,6 +102,7 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
+    // Store the result set and check for errors when fetching results
     result = mysql_store_result(conn);
     if (!result) {
         printf("<p>Unable to read results: ");
@@ -106,9 +113,9 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
+    // Output the table header
     field_count = mysql_num_fields(result);
     fields = mysql_fetch_fields(result);
-
     puts("<table>");
     puts("<thead><tr>");
     for (unsigned int i = 0; i < field_count; i++) {
@@ -116,20 +123,38 @@ int main(void) {
         print_html_escaped(fields[i].name);
         puts("</th>");
     }
-    puts("</tr></thead>");
 
+    // Add an extra column for details link
+    puts("<th>");
+    print_html_escaped("Details");
+    puts("</th>");
+
+    // Close the header row
+    puts("</tr></thead>");
     puts("<tbody>");
+
+    // Output the table rows
     while ((row = mysql_fetch_row(result)) != NULL) {
         puts("<tr>");
         for (unsigned int i = 0; i < field_count; i++) {
             puts("<td>");
-            if (row[i]) {
+            if (row[i] && strcmp(fields[i].name, "color") == 0) {
+                printf("<span class=\"swatch\" style=\"background-color:");
+                print_html_escaped(row[i]);
+                printf("\"></span>");
+                print_html_escaped(row[i]);
+            } else if (row[i]) {
                 print_html_escaped(row[i]);
             } else {
                 puts("NULL");
             }
             puts("</td>");
         }
+        puts("<td>");
+        printf("<a class=\"button\" href=\"/cgi-bin/form_view.cgi?id=");
+        print_html_escaped(row[0]);
+        printf("\">View Form</a>");
+        puts("</td>");
         puts("</tr>");
     }
     puts("</tbody>");
