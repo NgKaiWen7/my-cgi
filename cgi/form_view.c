@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cgi_code.h"
 #include "record_db.h"
 
 static int parse_id_text(const char *text, long *id) {
@@ -93,6 +94,7 @@ static void print_page_start(void) {
         "</head>\n"
         "<body>\n"
     );
+    PrintTopMenuHTML("Record Form View");
 }
 
 static void print_page_end(void) {

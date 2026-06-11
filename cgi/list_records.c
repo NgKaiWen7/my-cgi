@@ -1,6 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "record_db.h"
+#include "record.h"
+
+static void PrintTopMenuHTML(char *pageTitle)
+{
+    printf("<table width=100%% border=1 class=\"topmenuNEW\">");
+    printf("<tr>");
+
+    printf("<td width=100 style=\"text-align:center;\">");
+    printf("<a href=\"/cgi-bin/kaiwen/list_records\">");
+    printf("<img border=0 class=goslogo src=\"/images/GO_logo_dev.jpg\" title=\"Go to main page\">");
+    printf("</a>");
+    printf("</td>");
+
+    printf("<td style=\"text-align:left;padding:0px 15px;\">");
+    printf("<font color=black class=\"menuPagetitle\">%s</font>\n", pageTitle);
+    printf("</td>");
+
+    printf("<td width=100 class=topmenubutton>");
+    printf("</td>");
+
+    printf("</tr>");
+    printf("</table>");
+    printf("<div class=\"menubufferNEW\"></div>");
+}
 
 static void print_record_row(const Record *record) {
     printf("<tr>");
@@ -17,22 +41,16 @@ static void print_record_row(const Record *record) {
         puts("<td style=\"text-align:center;\">NULL</td>");
     }
     printf("<td style=\"text-align:center;\">%s</td>", record->address);
-    printf("<td style=\"text-align:center;\">");
-    printf("<button type=button class=\"iconbuttons\" onclick=\"viewitem%ld.requestSubmit();\" title=\"View\">View</button>", record->id);
-    printf("<form id=\"viewitem%ld\" method=POST action=\"/cgi-bin/kaiwen/form_view\">\n", record->id);
-    printf("<input type=hidden name=id value=\"%ld\">\n", record->id);
-    printf("</form>\n");
-    printf("</td>");
+    printf("<td style=\"text-align:center;\"><a class=\"iconbuttons\" href=\"/cgi-bin/kaiwen/form_view?id=%ld\" title=\"View\">View</a></td>", record->id);
     puts("</tr>");
 }
 
 
-
 void TableSorting_Script()
 {
-	printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/jquery.dataTables.min.css\">\n");
-	printf("<script type=\"text/javascript\" src=\"../js/jquery.js\"></script>\n");
-	printf("<script type=\"text/javascript\" language=\"javascript\" src=\"../js/jquery.dataTables.min.js\"></script>\n");
+	printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"/css/jquery.dataTables.min.css\">\n");
+	printf("<script type=\"text/javascript\" src=\"/js/jquery.js\"></script>\n");
+	printf("<script type=\"text/javascript\" language=\"javascript\" src=\"/js/jquery.dataTables.min.js\"></script>\n");
 
 	printf("<script type=\"text/javascript\" class=\"init\">\n");
 
@@ -143,10 +161,6 @@ void TableSorting_Script()
 		"	}\n"
 		"	]} ); \n\n");
 
-
-
-
-
 	// Event listener
 	printf(" var tblfilter=document.getElementById('tblfilter');\n");
 	printf(" if (tblfilter != null) { \n");
@@ -157,7 +171,6 @@ void TableSorting_Script()
 		"		.draw();\n"
 		"	} );\n");
 	printf("}\n\n");
-
 
 	printf(" var tblvfilter1=document.getElementById('tblvfilter1');\n");
 	printf(" if (tblvfilter1 != null) { \n");
@@ -192,7 +205,6 @@ void TableSorting_Script()
 
 	printf("	} );\n");
 	printf("</script>\n");
-
 }
 
 
@@ -219,13 +231,15 @@ int main(void) {
 	printf(".iconbuttons:hover { filter: brightness(120%%); }\n");
 	printf("</style>\n");
 
-	printf("</head>");
+	printf("</head>\n");
 
 	printf("<body>\n");
+    PrintTopMenuHTML("Kai Wen Testing");
+	printf("<center>\n");
+	printf("<br>");
 
     if (!record_db_select_all(&records)) {
-        puts("</div>");
-        puts("</div>");
+        puts("</center>");
         puts("</body>");
         puts("</html>");
         return EXIT_FAILURE;
@@ -259,8 +273,7 @@ int main(void) {
     puts("</div>");
 
     free(records);
-    puts("</div>");
-    puts("</div>");
+    puts("</center>");
     puts("</body>");
     puts("</html>");
     return EXIT_SUCCESS;

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "cgi_code.h"
 #include "record_db.h"
 
 static const char *CATEGORY_OPTIONS[] = {"new", "converted", "done"};
@@ -224,6 +225,7 @@ static void print_page_start(const char *title) {
     puts("</script>");
     puts("</head>");
     puts("<body>");
+    PrintTopMenuHTML((char *)title);
 }
 
 static void print_page_end(void) {
