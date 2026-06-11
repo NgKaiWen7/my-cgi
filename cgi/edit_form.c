@@ -1,17 +1,9 @@
 #include <ctype.h>
-#include <mysql.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "record.h"
-
-#define DB_HOST "localhost"
-#define DB_USER "nkw"
-#define DB_PASS "nkw"
-#define DB_NAME "trial"
-#define TABLE_NAME "trial_table"
-#define MAX_SQL 20000
+#include "record_db.h"
 
 static const char *CATEGORY_OPTIONS[] = {"new", "converted", "done"};
 static const size_t CATEGORY_OPTION_COUNT = sizeof(CATEGORY_OPTIONS) / sizeof(CATEGORY_OPTIONS[0]);
@@ -183,59 +175,6 @@ static void read_request(FormData *form) {
     }
 }
 
-static void escape_sql_value(MYSQL *conn, const char *input, char *output, size_t output_size, int allow_null) {
-    char *buffer;
-    size_t len;
-
-    if (allow_null && (!input || input[0] == '\0')) {
-        snprintf(output, output_size, "NULL");
-        return;
-    }
-
-    if (!input) {
-        input = "";
-    }
-
-    len = strlen(input);
-    buffer = (char *)malloc(len * 2 + 1);
-    if (!buffer) {
-        snprintf(output, output_size, "''");
-        return;
-    }
-
-    mysql_real_escape_string(conn, buffer, input, (unsigned long)len);
-    snprintf(output, output_size, "'%s'", buffer);
-    free(buffer);
-}
-
-static int validate_number_value(const char *value) {
-    char *end = NULL;
-
-    if (!value || !value[0]) {
-        return 1;
-    }
-
-    strtod(value, &end);
-    return end && *end == '\0';
-}
-
-static void normalize_datetime_value(const char *input, char *output, size_t output_size) {
-    char temp[64];
-
-    copy_value(temp, sizeof(temp), input);
-    for (char *p = temp; *p; p++) {
-        if (*p == 'T') {
-            *p = ' ';
-        }
-    }
-
-    if (strlen(temp) == 16) {
-        snprintf(output, output_size, "%s:00", temp);
-    } else {
-        copy_value(output, output_size, temp);
-    }
-}
-
 static void datetime_value_for_html(const char *input, char *output, size_t output_size) {
     copy_value(output, output_size, input);
     for (char *p = output; *p; p++) {
@@ -246,98 +185,6 @@ static void datetime_value_for_html(const char *input, char *output, size_t outp
     if (strlen(output) > 16) {
         output[16] = '\0';
     }
-}
-
-static int load_record(MYSQL *conn, FormData *form, long id) {
-    MYSQL_RES *result;
-    MYSQL_ROW row;
-    char sql[512];
-
-    snprintf(sql, sizeof(sql),
-             "SELECT id, title, datetime, amount, category, checklist1, checklist2, color, address "
-             "FROM %s WHERE id=%ld LIMIT 1",
-             TABLE_NAME, id);
-
-    if (mysql_query(conn, sql)) {
-        return 0;
-    }
-
-    result = mysql_store_result(conn);
-    if (!result) {
-        return 0;
-    }
-
-    row = mysql_fetch_row(result);
-    if (!row) {
-        mysql_free_result(result);
-        return 0;
-    }
-
-    form->record.id = id;
-    snprintf(form->id_text, sizeof(form->id_text), "%ld", id);
-    copy_value(form->record.title, sizeof(form->record.title), row[1]);
-    copy_value(form->record.datetime, sizeof(form->record.datetime), row[2]);
-    copy_value(form->record.amount, sizeof(form->record.amount), row[3]);
-    copy_value(form->record.category, sizeof(form->record.category), row[4]);
-    form->record.checklist1 = row[5] && strcmp(row[5], "0") != 0;
-    form->record.checklist2 = row[6] && strcmp(row[6], "0") != 0;
-    copy_value(form->record.color, sizeof(form->record.color), row[7]);
-    copy_value(form->record.address, sizeof(form->record.address), row[8]);
-
-    mysql_free_result(result);
-    return 1;
-}
-
-static int save_record(MYSQL *conn, const FormData *form, long *saved_id) {
-    char sql[MAX_SQL];
-    char q_title[512], q_datetime[128], q_category[256], q_color[64], q_address[RECORD_ADDRESS_SIZE * 2 + 3];
-    char normalized_datetime[64];
-    long id = 0;
-    int has_id = parse_id(form->id_text, &id);
-
-    if (!form->record.title[0] || !validate_number_value(form->record.amount)) {
-        return 0;
-    }
-
-    normalize_datetime_value(form->record.datetime, normalized_datetime, sizeof(normalized_datetime));
-    escape_sql_value(conn, form->record.title, q_title, sizeof(q_title), 0);
-    if (normalized_datetime[0]) {
-        escape_sql_value(conn, normalized_datetime, q_datetime, sizeof(q_datetime), 0);
-    } else {
-        snprintf(q_datetime, sizeof(q_datetime), "CURRENT_TIMESTAMP");
-    }
-    escape_sql_value(conn, form->record.category, q_category, sizeof(q_category), 1);
-    escape_sql_value(conn, form->record.color, q_color, sizeof(q_color), 1);
-    escape_sql_value(conn, form->record.address, q_address, sizeof(q_address), 1);
-
-    if (has_id) {
-        snprintf(sql, sizeof(sql),
-                 "UPDATE %s SET title=%s, datetime=%s, amount=%s, category=%s, "
-                 "checklist1=%d, checklist2=%d, color=%s, address=%s WHERE id=%ld",
-                 TABLE_NAME, q_title, q_datetime,
-                 form->record.amount[0] ? form->record.amount : "0",
-                 q_category, form->record.checklist1 ? 1 : 0, form->record.checklist2 ? 1 : 0,
-                 q_color, q_address, id);
-        *saved_id = id;
-    } else {
-        snprintf(sql, sizeof(sql),
-                 "INSERT INTO %s (title, datetime, amount, category, checklist1, checklist2, color, address) "
-                 "VALUES (%s, %s, %s, %s, %d, %d, %s, %s)",
-                 TABLE_NAME, q_title, q_datetime,
-                 form->record.amount[0] ? form->record.amount : "0",
-                 q_category, form->record.checklist1 ? 1 : 0, form->record.checklist2 ? 1 : 0,
-                 q_color, q_address);
-    }
-
-    if (mysql_query(conn, sql)) {
-        return 0;
-    }
-
-    if (!has_id) {
-        *saved_id = (long)mysql_insert_id(conn);
-    }
-
-    return 1;
 }
 
 static void print_page_start(const char *title) {
@@ -490,9 +337,9 @@ static void print_form(const FormData *form) {
     datetime_value_for_html(form->record.datetime, html_datetime, sizeof(html_datetime));
 
     puts("<div class=\"top-actions\">");
-    puts("<a class=\"button secondary\" href=\"/cgi-bin/list_records.cgi\">Back to List</a>");
+    puts("<a class=\"button secondary\" href=\"/cgi-bin/kaiwen/list_records\">Back to List</a>");
     if (has_id) {
-        printf("<a class=\"button secondary\" href=\"/cgi-bin/form_view.cgi?id=%ld\">View Record</a>", id);
+        printf("<a class=\"button secondary\" href=\"/cgi-bin/kaiwen/form_view?id=%ld\">View Record</a>", id);
     }
     puts("</div>");
 
@@ -500,7 +347,7 @@ static void print_form(const FormData *form) {
     print_html_escaped(has_id ? "Edit Record" : "New Record");
     puts("</h1>");
 
-    puts("<form class=\"form\" method=\"post\" action=\"/cgi-bin/edit_form.cgi\">");
+    puts("<form class=\"form\" method=\"post\" action=\"/cgi-bin/kaiwen/edit_form\">");
     puts("<input type=\"hidden\" name=\"action\" value=\"save\">");
     printf("<input type=\"hidden\" name=\"id\" value=\"");
     print_html_escaped(form->id_text);
@@ -528,7 +375,6 @@ static void print_form(const FormData *form) {
 
 int main(void) {
     FormData form;
-    MYSQL *conn;
     long id = 0;
     long saved_id = 0;
     int has_id;
@@ -538,40 +384,25 @@ int main(void) {
 
     print_page_start("Edit Record");
 
-    conn = mysql_init(NULL);
-    if (!conn) {
-        puts("<p>mysql_init() failed.</p>");
-        print_page_end();
-        return EXIT_FAILURE;
-    }
-
-    if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 0, NULL, 0)) {
-        printf("<p>Database connection failed: ");
-        print_html_escaped(mysql_error(conn));
-        puts("</p>");
-        mysql_close(conn);
-        print_page_end();
-        return EXIT_FAILURE;
-    }
-
     if (strcmp(form.action, "save") == 0) {
-        if (save_record(conn, &form, &saved_id)) {
+        form.record.id = has_id ? id : 0;
+        if (record_db_save(&form.record, has_id, &saved_id)) {
             printf("<p>Record saved successfully.</p>");
-            printf("<p><a class=\"button\" href=\"/cgi-bin/form_view.cgi?id=%ld\">View Saved Record</a></p>", saved_id);
+            printf("<p><a class=\"button\" href=\"/cgi-bin/kaiwen/form_view?id=%ld\">View Saved Record</a></p>", saved_id);
         } else {
-            puts("<p>Unable to save record. Title is required and amount must be numeric.</p>");
             print_form(&form);
         }
     } else {
-        if (has_id && !load_record(conn, &form, id)) {
-            puts("<p>Record not found.</p>");
-            puts("<p><a class=\"button secondary\" href=\"/cgi-bin/list_records.cgi\">Back to List</a></p>");
+        if (has_id && !record_db_find_by_id(id, &form.record)) {
+            puts("<p><a class=\"button secondary\" href=\"/cgi-bin/kaiwen/list_records\">Back to List</a></p>");
         } else {
+            if (has_id) {
+                snprintf(form.id_text, sizeof(form.id_text), "%ld", form.record.id);
+            }
             print_form(&form);
         }
     }
 
-    mysql_close(conn);
     print_page_end();
 
     return EXIT_SUCCESS;

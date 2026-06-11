@@ -1,44 +1,9 @@
 #include <ctype.h>
-#include <mysql.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define DB_HOST "localhost"
-#define DB_USER "nkw"
-#define DB_PASS "nkw"
-#define DB_NAME "trial"
-#define TABLE_NAME "trial_table"
-
-static void print_html_escaped(const char *text) {
-    if (!text) {
-        return;
-    }
-
-    while (*text) {
-        switch (*text) {
-            case '&':
-                fputs("&amp;", stdout);
-                break;
-            case '<':
-                fputs("&lt;", stdout);
-                break;
-            case '>':
-                fputs("&gt;", stdout);
-                break;
-            case '"':
-                fputs("&quot;", stdout);
-                break;
-            case '\'':
-                fputs("&#39;", stdout);
-                break;
-            default:
-                fputc(*text, stdout);
-                break;
-        }
-        text++;
-    }
-}
+#include "record_db.h"
 
 static int from_hex(int ch) {
     if (ch >= '0' && ch <= '9') {
@@ -158,16 +123,14 @@ static void print_page_start(void) {
 }
 
 static void print_page_end(void) {
-    puts("<p><a class=\"button\" href=\"/cgi-bin/list_records.cgi\">Back to List</a></p>");
+    puts("<p><a class=\"button\" href=\"/cgi-bin/kaiwen/list_records\">Back to List</a></p>");
     puts("</div>");
     puts("</body>");
     puts("</html>");
 }
 
 int main(void) {
-    MYSQL *conn;
     long id = 0;
-    char sql[256];
 
     print_page_start();
 
@@ -178,44 +141,15 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    conn = mysql_init(NULL);
-    if (!conn) {
+    if (!record_db_delete(id)) {
         puts("<h1>Delete Failed</h1>");
-        puts("<p>mysql_init() failed.</p>");
         print_page_end();
         return EXIT_FAILURE;
     }
 
-    if (!mysql_real_connect(conn, DB_HOST, DB_USER, DB_PASS, DB_NAME, 0, NULL, 0)) {
-        puts("<h1>Delete Failed</h1>");
-        printf("<p>Database connection failed: ");
-        print_html_escaped(mysql_error(conn));
-        puts("</p>");
-        mysql_close(conn);
-        print_page_end();
-        return EXIT_FAILURE;
-    }
+    puts("<h1>Record Deleted</h1>");
+    printf("<p>Delete request completed for id %ld.</p>", id);
 
-    snprintf(sql, sizeof(sql), "DELETE FROM %s WHERE id=%ld LIMIT 1", TABLE_NAME, id);
-    if (mysql_query(conn, sql)) {
-        puts("<h1>Delete Failed</h1>");
-        printf("<p>Query failed: ");
-        print_html_escaped(mysql_error(conn));
-        puts("</p>");
-        mysql_close(conn);
-        print_page_end();
-        return EXIT_FAILURE;
-    }
-
-    if (mysql_affected_rows(conn) == 0) {
-        puts("<h1>Record Not Found</h1>");
-        printf("<p>No record was deleted for id %ld.</p>", id);
-    } else {
-        puts("<h1>Record Deleted</h1>");
-        printf("<p>Record id %ld was deleted.</p>", id);
-    }
-
-    mysql_close(conn);
     print_page_end();
 
     return EXIT_SUCCESS;
