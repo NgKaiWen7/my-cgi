@@ -4,63 +4,224 @@
 
 static void print_record_row(const Record *record) {
     printf("<tr>");
-    printf("<td>%ld</td>", record->id);
-    printf("<td>%s</td>", record->title);
-    printf("<td>%s</td>", record->datetime);
-    printf("<td>%s</td>", record->amount);
-    printf("<td>%s</td>", record->category);
-    printf("<td>%s</td>", record->checklist1 ? "true" : "false");
-    printf("<td>%s</td>", record->checklist2 ? "true" : "false");
+    printf("<td style=\"text-align:center;\">%ld</td>", record->id);
+    printf("<td style=\"text-align:center;\">%s</td>", record->title);
+    printf("<td style=\"text-align:center;\">%s</td>", record->datetime);
+    printf("<td style=\"text-align:center;\">%s</td>", record->amount);
+    printf("<td style=\"text-align:center;\">%s</td>", record->category);
+    printf("<td style=\"text-align:center;\">%s</td>", record->checklist1 ? "true" : "false");
+    printf("<td style=\"text-align:center;\">%s</td>", record->checklist2 ? "true" : "false");
     if (record->color[0]) {
-        printf("<td><span class=\"swatch\" style=\"background-color:%s\"></span>%s</td>", record->color, record->color);
+        printf("<td style=\"text-align:center;\"><span class=\"swatch\" style=\"background-color:%s\"></span>%s</td>", record->color, record->color);
     } else {
-        puts("<td>NULL</td>");
+        puts("<td style=\"text-align:center;\">NULL</td>");
     }
-    printf("<td>%s</td>", record->address);
-    printf("<td><a class=\"iconbuttons\" href=\"/cgi-bin/kaiwen/form_view?id=%ld\" title=\"View\">View</a></td>", record->id);
+    printf("<td style=\"text-align:center;\">%s</td>", record->address);
+    printf("<td style=\"text-align:center;\">");
+    printf("<button type=button class=\"iconbuttons\" onclick=\"viewitem%ld.requestSubmit();\" title=\"View\">View</button>", record->id);
+    printf("<form id=\"viewitem%ld\" method=POST action=\"/cgi-bin/kaiwen/form_view\">\n", record->id);
+    printf("<input type=hidden name=id value=\"%ld\">\n", record->id);
+    printf("</form>\n");
+    printf("</td>");
     puts("</tr>");
 }
+
+
+
+void TableSorting_Script()
+{
+	printf("<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/jquery.dataTables.min.css\">\n");
+	printf("<script type=\"text/javascript\" src=\"../js/jquery.js\"></script>\n");
+	printf("<script type=\"text/javascript\" language=\"javascript\" src=\"../js/jquery.dataTables.min.js\"></script>\n");
+
+	printf("<script type=\"text/javascript\" class=\"init\">\n");
+
+	printf("	$(document).ready(function() {\n");
+
+	printf("	$('#tblresults').DataTable( {\n");
+	printf("	\"columnDefs\": [ \n");
+	printf("	{\n");
+	printf("		\"targets\": [ 2 ],\n");
+	printf("		\"visible\": true,\n");
+	printf("		\"searchable\": true\n");
+	printf("	},\n");
+	printf("	{\n");
+	printf("		\"targets\": [ 3 ],\n");
+	printf("		\"visible\": true\n");
+	printf("	}\n");
+	printf("	]} ); \n\n");
+
+	printf(" "	
+		"	var table1=$('#tblresults1').DataTable( "
+		"	{ordering:true,\n"
+		"	\"columnDefs\": [ \n"
+		"	{\n"
+		"		\"targets\": [ 2 ],\n"
+		"		\"visible\": true,\n"
+		"		\"searchable\": true\n"
+		"	},\n"
+		"	{\n"
+		"		\"targets\": [ 3 ],\n"
+		"		\"visible\": true\n"
+		"	}\n"
+		"	]} ); \n\n"
+		"	table1.order([0,'desc']).draw();"
+	      );
+
+	printf(" "	
+		"	var table3=$('#tblresults3').DataTable( "
+		"	{ordering:false,\n"
+		"	\"columnDefs\": [ \n"
+		"	{\n"
+		"		\"targets\": [ 2 ],\n"
+		"		\"visible\": true,\n"
+		"		\"searchable\": true\n"
+		"	},\n"
+		"	{\n"
+		"		\"targets\": [ 3 ],\n"
+		"		\"visible\": true\n"
+		"	}\n"
+		"	]} ); \n\n"
+	//	"	table3.order([0,'desc']).draw();"
+	      );
+
+
+	printf("	var table2=$('#tblresults2').DataTable( "
+			"{ordering:false,\n");
+	printf("	\"columnDefs\": [ \n");
+	printf("	{\n");
+	printf("		\"targets\": [ 2 ],\n");
+	printf("		\"visible\": true,\n");
+	printf("		\"searchable\": true\n");
+	printf("	},\n");
+	printf("	{\n");
+	printf("		\"targets\": [ 3 ],\n");
+	printf("		\"visible\": true\n");
+	printf("	}\n");
+	printf("	]} ); \n\n");
+
+
+	printf(" 	var tblverified1=$('#tblverified1').DataTable( "
+		"	{ordering:true,\n"
+		"	\"columnDefs\": [ \n"
+		"	{\n"
+		"		\"targets\": [ 2 ],\n"
+		"		\"visible\": true,\n"
+		"		\"searchable\": true\n"
+		"	},\n"
+		"	{\n"
+		"		\"targets\": [ 3 ],\n"
+		"		\"visible\": true\n"
+		"	}\n"
+		"	]} ); \n\n");
+
+	printf(" 	var tblverified2=$('#tblverified2').DataTable( "
+		"	{ordering:true,\n"
+		"	\"columnDefs\": [ \n"
+		"	{\n"
+		"		\"targets\": [ 2 ],\n"
+		"		\"visible\": true,\n"
+		"		\"searchable\": true\n"
+		"	},\n"
+		"	{\n"
+		"		\"targets\": [ 3 ],\n"
+		"		\"visible\": true\n"
+		"	}\n"
+		"	]} ); \n\n");
+
+	printf(" 	var tblverified3=$('#tblverified3').DataTable( "
+		"	{ordering:true,\n"
+		"	\"columnDefs\": [ \n"
+		"	{\n"
+		"		\"targets\": [ 2 ],\n"
+		"		\"visible\": true,\n"
+		"		\"searchable\": true\n"
+		"	},\n"
+		"	{\n"
+		"		\"targets\": [ 3 ],\n"
+		"		\"visible\": true\n"
+		"	}\n"
+		"	]} ); \n\n");
+
+
+
+
+
+	// Event listener
+	printf(" var tblfilter=document.getElementById('tblfilter');\n");
+	printf(" if (tblfilter != null) { \n");
+	printf("	tblfilter.addEventListener(\"change\",function() {\n"
+		"	table1\n"
+		"		.columns( 2 )\n"	
+		"		.search( this.value )\n"	
+		"		.draw();\n"
+		"	} );\n");
+	printf("}\n\n");
+
+
+	printf(" var tblvfilter1=document.getElementById('tblvfilter1');\n");
+	printf(" if (tblvfilter1 != null) { \n");
+	printf("	tblvfilter1.addEventListener(\"change\",function() {\n"
+		"	tblverified1\n"
+		"		.columns( 3 )\n"	
+		"		.search( this.value )\n"	
+		"		.draw();\n"
+		"	} );\n");
+	printf("}\n\n");
+
+	printf(" var tblvfilter2=document.getElementById('tblvfilter2');\n");
+	printf(" if (tblvfilter2 != null) { \n");
+	printf("	tblvfilter2.addEventListener(\"change\",function() {\n"
+		"	tblverified1\n"
+		"		.columns( 9 )\n"	
+		"		.search( this.value )\n"	
+		"		.draw();\n"
+		"	} );\n");
+	printf("}\n\n");
+
+	printf(" var tblvfilter3=document.getElementById('tblvfilter3');\n");
+	printf(" if (tblvfilter3 != null) { \n");
+	printf("	tblvfilter3.addEventListener(\"change\",function() {\n"
+		"	tblverified1\n"
+		"		.columns( 5 )\n"	
+		"		.search( this.value )\n"	
+		"		.draw();\n"
+		"	} );\n");
+	printf("}\n\n");
+
+
+	printf("	} );\n");
+	printf("</script>\n");
+
+}
+
 
 int main(void) {
     Record *records = NULL;
 
-    puts(
-        "Content-Type: text/html\r\n\r\n"
-        "<!doctype html>\n"
-        "<html lang=\"en\">\n"
-        "<head>\n"
-        "<meta charset=\"utf-8\">\n"
-        "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n"
-        "<title>Trial Table Records</title>\n"
-        "<link rel=\"stylesheet\" href=\"/css/style.css\">\n"
-        "<style>\n"
-        "body{font-family:Arial,Helvetica,sans-serif;margin:0;background:#f6f8fb;color:#1f2937;font-size:12px}\n"
-        ".page-wrap{text-align:center;padding:20px 12px 48px}\n"
-        ".panel{display:inline-block;text-align:left;background:#fff;font-size:12px;padding:20px;width:100%;max-width:1000px;border-radius:10px;box-sizing:border-box}\n"
-        ".topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}\n"
-        "h1{margin:0;color:#1f2937;font-size:20px;line-height:1.2}\n"
-        ".actionbutton{display:inline-block;border-radius:7px;background:#009efd;text-decoration:none;border:none;color:#fff;border-bottom:3px solid #585858;cursor:pointer;padding:7px 12px;font-size:13px;font-weight:bold;outline:none}\n"
-        ".actionbutton:hover,.iconbuttons:hover{filter:brightness(120%)}\n"
-        ".iconbuttons{display:inline-block;padding:5px 10px;border:0;background-color:#1679d6;border-radius:5px;color:#fff;font-size:13px;line-height:1;text-decoration:none;cursor:pointer;white-space:nowrap}\n"
-        ".table-scroll{overflow-x:auto}\n"
-        "table.resultbox1{width:100%;max-width:1200px;border-collapse:collapse;background:#fff;color:#1f2937}\n"
-        ".resultbox1 th,.resultbox1 td{border:1px solid #d7dde8;padding:8px 10px;text-align:left;vertical-align:top}\n"
-        ".resultbox1 th{background:#eef2f7;color:#374151;font-weight:bold;text-transform:uppercase}\n"
-        ".resultbox1 tbody tr:nth-child(even){background:#f9fafb}\n"
-        ".resultbox1 tbody tr:hover{background:#eef6ff}\n"
-        ".resultbox1 td:first-child,.resultbox1 th:first-child,.resultbox1 td:nth-child(6),.resultbox1 th:nth-child(6),.resultbox1 td:nth-child(7),.resultbox1 th:nth-child(7),.resultbox1 td:last-child,.resultbox1 th:last-child{text-align:center}\n"
-        ".swatch{display:inline-block;width:22px;height:22px;margin-right:8px;border:1px solid #9ca3af;border-radius:4px;vertical-align:middle}\n"
-        "@media(max-width:700px){.topbar{align-items:flex-start;flex-direction:column}.panel{padding:14px}.resultbox1 th,.resultbox1 td{padding:7px 8px}}\n"
-        "</style>\n"
-        "</head>\n"
-        "<body>\n"
-        "<div class=\"page-wrap\">\n"
-        "<div class=\"panel\">\n"
-        "<div class=\"topbar\">\n"
-        "<h1>Trial Table Records</h1>\n"
-        "<a class=\"actionbutton\" href=\"/cgi-bin/kaiwen/edit_form?id=null\">Add New Record</a>\n"
-        "</div>\n"
-    );
+	printf("Content-Type: text/html\r\n\r\n");
+	printf("<!DOCTYPE html>\n");
+	printf("<html class=mainbody>\n");
+	printf("<head>\n");
+	printf("<meta charset=\"UTF-8\">\n");
+	printf("<title>Gplex Online - %s</title>\n", "Kai Wen Testing"); // Hardcoded title for testing
+	printf("<link rel=\"icon\" type=\"image/png\" href=\"/images/login_logo_v2.png\">\n");
+	printf("<link rel=\"stylesheet\" href=\"/css/style.css?v=%d\">\n", 1);
+
+    TableSorting_Script();
+	
+	// Font Awesome
+	printf("<link rel=\"stylesheet\" href=\"../css/font-awesome-4.7.0/css/font-awesome.min.css\">\n");
+
+	printf("<style>\n");
+	printf("bookmark[id] { scroll-margin-top: 100px; }\n"); // Offset bookmark
+	printf(".iconbuttons { padding:5px;padding-left:10px;padding-right:10px;border:0px;background-color:rgb(0,0,255,0);border-radius:5px;font-size:13px;cursor: pointer; }\n"); 
+	printf(".iconbuttons:hover { filter: brightness(120%%); }\n");
+	printf("</style>\n");
+
+	printf("</head>");
+
+	printf("<body>\n");
 
     if (!record_db_select_all(&records)) {
         puts("</div>");
@@ -70,21 +231,24 @@ int main(void) {
         return EXIT_FAILURE;
     }
 
-    puts("<div class=\"table-scroll\">");
-    puts("<table class=\"resultbox1\">");
-    puts("<thead><tr>");
-    puts("<th>id</th>");
-    puts("<th>title</th>");
-    puts("<th>datetime</th>");
-    puts("<th>amount</th>");
-    puts("<th>category</th>");
-    puts("<th>checklist1</th>");
-    puts("<th>checklist2</th>");
-    puts("<th>color</th>");
-    puts("<th>address</th>");
-    puts("<th>Details</th>");
-    puts("</tr></thead>");
-    puts("<tbody>");
+	// Start section
+	printf("<div style=\"background:white;font-size:12px;padding:20px;width:100%%;max-width:1000px;border-radius: 10px;\">");
+	printf("<table id=\"tblresults\" class=resultbox1 style=\"width:100%%;max-width:1200px;\">\n");
+	printf("<thead>\n");
+	printf("<tr>");
+	printf("<th style=\"text-align:center;\">"); printf("id"); printf("</th>");
+	printf("<th style=\"text-align:center;\">"); printf("title"); printf("</th>");
+	printf("<th style=\"text-align:left;\">"); printf("datetime"); printf("</th>");
+	printf("<th style=\"text-align:left;\">"); printf("amount"); printf("</th>");
+	printf("<th style=\"text-align:left;\">"); printf("category"); printf("</th>");
+	printf("<th style=\"text-align:left;\">"); printf("checklist1"); printf("</th>");
+	printf("<th style=\"text-align:left;\">"); printf("checklist2"); printf("</th>");
+    printf("<th style=\"text-align:left;\">"); printf("color"); printf("</th>");
+    printf("<th style=\"text-align:left;\">"); printf("address"); printf("</th>");
+	printf("<th style=\"text-align:center;width:20px;\">"); printf("</th>");
+	printf("</tr>");
+	printf("</thead>\n");
+	printf("<tbody>\n");
 
     for (Record *record = records; record->id != 0; record++) {
         print_record_row(record);

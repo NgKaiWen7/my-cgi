@@ -4,24 +4,69 @@
 
 #include "record_db.h"
 
-static int get_id_from_query(long *id) {
-    const char *query = getenv("QUERY_STRING");
-    const char *id_text;
+static int parse_id_text(const char *text, long *id) {
     char *end = NULL;
     long value;
 
-    if (!query || strncmp(query, "id=", 3) != 0) {
+    if (!text || !text[0]) {
         return 0;
     }
 
-    id_text = query + 3;
-    value = strtol(id_text, &end, 10);
+    value = strtol(text, &end, 10);
     if (!end || *end != '\0' || value <= 0) {
         return 0;
     }
 
     *id = value;
     return 1;
+}
+
+static int read_id_from_params(char *params, long *id) {
+    char *pair = strtok(params, "&");
+
+    while (pair) {
+        char *equals = strchr(pair, '=');
+        if (equals) {
+            *equals = '\0';
+            if (strcmp(pair, "id") == 0) {
+                return parse_id_text(equals + 1, id);
+            }
+        }
+        pair = strtok(NULL, "&");
+    }
+
+    return 0;
+}
+
+static int get_id_from_request(long *id) {
+    const char *method = getenv("REQUEST_METHOD");
+    const char *query = getenv("QUERY_STRING");
+
+    if (method && strcmp(method, "POST") == 0) {
+        const char *length_text = getenv("CONTENT_LENGTH");
+        long length = length_text ? strtol(length_text, NULL, 10) : 0;
+
+        if (length > 0 && length < 1024) {
+            char *body = (char *)malloc((size_t)length + 1);
+            if (!body) {
+                return 0;
+            }
+
+            size_t read = fread(body, 1, (size_t)length, stdin);
+            body[read] = '\0';
+            int ok = read_id_from_params(body, id);
+            free(body);
+            return ok;
+        }
+    }
+
+    if (query && query[0]) {
+        char query_copy[1024];
+        snprintf(query_copy, sizeof(query_copy), "%s", query);
+        return read_id_from_params(query_copy, id);
+    }
+
+    return 0;
 }
 
 static void print_page_start(void) {
@@ -130,7 +175,7 @@ int main(void) {
 
     print_page_start();
 
-    if (!get_id_from_query(&id)) {
+    if (!get_id_from_request(&id)) {
         puts("<p>Missing or invalid record id.</p>");
         puts("<p><a class=\"button secondary\" href=\"/cgi-bin/kaiwen/list_records\">Back to List</a></p>");
         print_page_end();
